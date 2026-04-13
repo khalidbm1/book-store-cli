@@ -295,6 +295,10 @@ func TestHandleGetBooks_ISBNNotFoundExits(t *testing.T) {
 	withTempBooksFile(t, initial, func(tmpPath string) {
 		_ = tmpPath
 
+		origExit := osExit
+		osExit = func(code int) { panic(code) }
+		defer func() { osExit = origExit }()
+
 		getCli := flag.NewFlagSet("get", flag.ContinueOnError)
 		all := getCli.Bool("all", false, "")
 		isbn := getCli.String("ISBN", "999", "")
@@ -303,16 +307,19 @@ func TestHandleGetBooks_ISBNNotFoundExits(t *testing.T) {
 		os.Args = []string{"cmd", "get", "--ISBN", "999"}
 		defer func() { os.Args = oldArgs }()
 
-		// We cannot intercept os.Exit easily without refactoring; instead,
-		// we run in a subprocess-like pattern is not trivial in unit tests.
-		// Here we just ensure the message is printed before exit.
+		var exited bool
 		out := captureOutput(t, func() {
 			defer func() {
-				recover() // in case of panic, though os.Exit won't panic
+				if r := recover(); r != nil {
+					exited = true
+				}
 			}()
 			handleGetBooks(getCli, all, isbn)
 		})
 
+		if !exited {
+			t.Fatal("expected osExit to be called")
+		}
 		if !strings.Contains(out, "Book not found") {
 			t.Fatalf("expected 'Book not found' in output, got: %s", out)
 		}
@@ -362,6 +369,10 @@ func TestHandleDeleteBook_ISBNNotFoundPrintsMessage(t *testing.T) {
 	withTempBooksFile(t, initial, func(tmpPath string) {
 		_ = tmpPath
 
+		origExit := osExit
+		osExit = func(code int) { panic(code) }
+		defer func() { osExit = origExit }()
+
 		deleteCli := flag.NewFlagSet("delete", flag.ContinueOnError)
 		isbn := deleteCli.String("ISBN", "999", "")
 
@@ -369,13 +380,19 @@ func TestHandleDeleteBook_ISBNNotFoundPrintsMessage(t *testing.T) {
 		os.Args = []string{"cmd", "delete", "--ISBN", "999"}
 		defer func() { os.Args = oldArgs }()
 
+		var exited bool
 		out := captureOutput(t, func() {
 			defer func() {
-				recover()
+				if r := recover(); r != nil {
+					exited = true
+				}
 			}()
 			handleDeleteBook(deleteCli, isbn)
 		})
 
+		if !exited {
+			t.Fatal("expected osExit to be called")
+		}
 		if !strings.Contains(out, "Book not found") {
 			t.Fatalf("expected 'Book not found' in output, got: %s", out)
 		}

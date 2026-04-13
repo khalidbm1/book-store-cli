@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var osExit = os.Exit
+
 type Book struct {
 	ISBN          string   `json:"isbn"`
 	Title         string   `json:"title"`
@@ -25,7 +27,7 @@ type Book struct {
 func checkError(err error) {
 	if err != nil {
 		fmt.Println("Error:", err)
-		os.Exit(1)
+		osExit(1)
 	}
 }
 
@@ -57,7 +59,7 @@ func handleGetBooks(cli *flag.FlagSet, all *bool, isbn *string) {
 
 	if !*all && *isbn == "" {
 		fmt.Println("sub command --all or --ISBN needed")
-		os.Exit(1)
+		osExit(1)
 	}
 	books, err := getBooks()
 	checkError(err)
@@ -83,7 +85,7 @@ func handleGetBooks(cli *flag.FlagSet, all *bool, isbn *string) {
 
 		if !foundBook {
 			fmt.Println("Book not found")
-			os.Exit(1)
+			osExit(1)
 		}
 	}
 }
@@ -94,7 +96,7 @@ func handleAddBook(addCli *flag.FlagSet, isbn *string, title *string, author *st
 	if *isbn == "" || *title == "" || *author == "" || *price == 0 || *imageURL == "" || *description == "" || *category == "" || *publishedDate == "" || *stock == 0 || *reviews == "" || *rating == 0 {
 		fmt.Println("Please Provide all required fileds")
 		addCli.PrintDefaults()
-		os.Exit(1)
+		osExit(1)
 	}
 
 	books, err := getBooks()
@@ -145,10 +147,11 @@ func handleDeleteBook(deleteCli *flag.FlagSet, isbn *string) {
 	if *isbn == "" {
 		fmt.Println("Please Provide ISBN")
 		deleteCli.PrintDefaults()
-		os.Exit(1)
+		osExit(1)
 	}
 
 	books, err := getBooks()
+	checkError(err)
 	var foundBook bool
 
 	for i, book := range books {
@@ -160,7 +163,7 @@ func handleDeleteBook(deleteCli *flag.FlagSet, isbn *string) {
 
 	if !foundBook {
 		fmt.Println("Book not found")
-		os.Exit(1)
+		osExit(1)
 	}
 
 	err = saveBooks(books)
@@ -174,7 +177,7 @@ func handleUpdateBook(updateCli *flag.FlagSet, isbn *string, title *string, auth
 	updateCli.Parse(os.Args[2:])
 	if *isbn == "" {
 		updateCli.PrintDefaults()
-		os.Exit(1)
+		osExit(1)
 	}
 	books, err := getBooks()
 	var foundBook bool
@@ -195,7 +198,7 @@ func handleUpdateBook(updateCli *flag.FlagSet, isbn *string, title *string, auth
 	}
 	if !foundBook {
 		fmt.Println("Book not found")
-		os.Exit(1)
+		osExit(1)
 	}
 	err = saveBooks(books)
 	checkError(err)
